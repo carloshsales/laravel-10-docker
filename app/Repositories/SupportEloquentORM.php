@@ -4,13 +4,27 @@ namespace App\Repositories;
 
 use App\DTO\Support\{CreateSupportDTO, UpdateSupportDTO};
 use App\Models\Support;
-use App\Repositories\Interfaces\SupportRepositoryInterface;
+use App\Repositories\Interfaces\{PaginationInterface, SupportRepositoryInterface};
 use stdClass;
 
 class SupportEloquentORM implements SupportRepositoryInterface
 {
     public function __construct(protected Support $model)
     {
+    }
+
+    public function paginate(int $page = 1, int $totalPerPage = 15, string $filter = null): PaginationInterface
+    {
+        $result = $this
+            ->model
+            ->where(function ($query) use ($filter) {
+                if ($filter) {
+                    $query->where('subject', $filter);
+                    $query->orWhere('body', 'like', "%{$filter}%");
+                }
+            })
+            ->paginate($totalPerPage, ['*'], 'page', $page);
+        return new PaginationPresenter($result);
     }
 
     public function getAll(string $filter = null): array
